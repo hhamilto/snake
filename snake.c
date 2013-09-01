@@ -23,9 +23,9 @@ void main(){
     struct timespec rem;
     time_t last;
     struct termios termios_p;
-    char input = 0, print = 1,
+    char input = 0,  print = 1,
         again = 1, justread = 0,
-        dir = RIGHT;
+        dir = RIGHT, trash;
     fd_set set;
     struct winsize w;
     char** array;
@@ -105,19 +105,30 @@ void main(){
             deploySnack(termWidth, termHeight);
         }
         
+        FD_ZERO( &set );
+        FD_SET( 0, &set);
+        select(3, &set, NULL, NULL, &ito);
         
+        if(FD_ISSET(0, &set)){
+            read(0, &input, 1);
+            fprintf(fd,"readin a byte\n");
+            justread = 1;
+            again = 1;
+        }
         again = 1;
         while(again){
             again = 0;
             FD_ZERO( &set );
             FD_SET( 0, &set);
             select(3, &set, NULL, NULL, &ito);
+            
             if(FD_ISSET(0, &set)){
-                read(0, &input, 1);
+                read(0, &trash, 1);
                 fprintf(fd,"readin a byte\n");
                 justread = 1;
                 again = 1;
             }
+            // clear out 
         }
         if(input == 'q'){
             quit(&termios_p);
