@@ -98,6 +98,7 @@ void main(){
         lengthen = 0;
         if(snackX == body[0][0] && snackY == body[0][1]){
             fprintf(fd,"eatin snack\n");
+            updateInterval= updateInterval*.96;
             snackDeployed = 0;
             lengthen = 1;
         }
