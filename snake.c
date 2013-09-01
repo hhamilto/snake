@@ -12,8 +12,8 @@
 char* gameover = "Good game, brah!";
 int* body[BODY_MAX_LEN];
 FILE* fd, *urand;
-int snackX, snackY;
-char snackDeployed = 0, lengthen, paused = 0;
+unsigned int snackX, snackY, updateInterval;
+char snackDeployed = 0, lengthen, paused = 0,fast = 0;
 
 void main(){
     int i,j,k,termWidth,termHeight;
@@ -70,15 +70,17 @@ void main(){
     termHeight=w.ws_row;
     fprintf(fd,"row: %i\n", w.ws_row);
     fprintf(fd,"col: %i\n", w.ws_col);
-    req.tv_nsec = 500000000;
-    req.tv_sec = 0;
+    updateInterval=500000000;
     initBody();
     fflush(fd);
     while(1){
+        fprintf(fd, "snack(%i,%i)",snackX,snackY);
         if(print){
             for(j = 0; j < w.ws_row; j++){
                 for(i = 0; i < w.ws_col; i++){
-                    if(bodyContains(i,j)){
+                    if(body[0][0] == i && body[0][1] == j) {
+                        printf("#");
+                    }else if(bodyContains(i,j)){
                         printf("+");
                     }else if(snackX == i && snackY == j) {
                         printf("@");
@@ -89,10 +91,13 @@ void main(){
             }
         }
         fflush(stdout);
+        req.tv_nsec = fast?100000000:updateInterval;
+        req.tv_sec = 0;
         nanosleep(&req, &rem);
         if(!paused) slither(lengthen);
         lengthen = 0;
         if(snackX == body[0][0] && snackY == body[0][1]){
+            fprintf(fd,"eatin snack\n");
             snackDeployed = 0;
             lengthen = 1;
         }
@@ -119,16 +124,33 @@ void main(){
         } else if(input == 'p'){
             paused=!paused;
         }
+        fast = 0;
         if(justread && !paused){
             fprintf(fd,"reacting to a readddddddddddddd\n");
             if(input == 'a' && dir != RIGHT){
-                dir = LEFT;
+                if(dir == LEFT){
+                    fast = 1;
+                }else{
+                    dir = LEFT;
+                }
             }else if(input == 's' && dir != UP){
-                dir = DOWN;
+                if(dir == DOWN){
+                    fast = 1;
+                }else{
+                    dir = DOWN;
+                }
             }else if(input == 'w' && dir != DOWN){
-                dir = UP;
+                if(dir == UP){
+                    fast = 1;
+                }else{
+                    dir = UP;
+                }
             }else if(input == 'd' && dir != LEFT){
-                dir = RIGHT;
+                if(dir == RIGHT){
+                    fast = 1;
+                }else{
+                    dir = RIGHT;
+                }
             }
         }
         if(dir == LEFT){
@@ -152,15 +174,15 @@ void main(){
 }
 
 void initBody(){
-    body[0][0]=5;
+    body[0][0]=70;
     body[0][1]=5;
-    body[1][0]=5;
+    body[1][0]=70;
     body[1][1]=4;
-    body[2][0]=5;
+    body[2][0]=70;
     body[2][1]=3;
-    body[3][0]=5;
+    body[3][0]=70;
     body[3][1]=2;
-    body[4][0]=5;
+    body[4][0]=70;
     body[4][1]=1;
 }
 
@@ -205,8 +227,21 @@ void quit(struct termios* termios_p){
 
 
 void checkGameOver(struct winsize *w, int x, int y, struct termios* termios_p){
-    int i;
-    if(x<0 || x > w->ws_col || y < 0 || y > w->ws_row){
+    int i =0,j =0;
+    char overlap = 0;
+    //check to see if we curled up on ourselves;
+    while(body[i][0] != -1 && !overlap){
+        j=0;
+        while(body[j][0] != -1 && !overlap){
+            if(body[i][0] == body[j][0]
+               && body[i][1] == body[j][1]
+               && i!=j)
+                overlap = 1;
+            j++;
+        }
+        i++;
+    }
+    if(x<0 || x >= w->ws_col || y < 0 || y >= w->ws_row || overlap){
         printf("\n");
         for(i = 0; i < w->ws_col; i++){
             printf("*");
@@ -220,10 +255,10 @@ void checkGameOver(struct winsize *w, int x, int y, struct termios* termios_p){
     }
 }
 
-void deploySnack(int height, int width){
+void deploySnack(int width, int height){
     //read from urandom
     do{
-        fprintf(fd,"deploying snakc\n");
+        fprintf(fd,"deploying snakc width: %i height: %i\n",width,height);
         fread(&snackX, sizeof (snackX), 1, urand);
         fread(&snackY, sizeof (snackY), 1, urand);
         snackX%=width;
