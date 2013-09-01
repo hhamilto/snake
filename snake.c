@@ -13,7 +13,7 @@ char* gameover = "Good game, brah!";
 int* body[BODY_MAX_LEN];
 FILE* fd, *urand;
 unsigned int snackX, snackY, updateInterval;
-char snackDeployed = 0, lengthen, paused = 0,fast = 0;
+char snackDeployed = 0, lengthen, paused = 0,fast = 0, score = 0;
 
 void main(){
     int i,j,k,termWidth,termHeight;
@@ -74,18 +74,23 @@ void main(){
     initBody();
     fflush(fd);
     while(1){
-        fprintf(fd, "snack(%i,%i)",snackX,snackY);
         if(print){
             for(j = 0; j < w.ws_row; j++){
                 for(i = 0; i < w.ws_col; i++){
-                    if(body[0][0] == i && body[0][1] == j) {
+                    if(i == 0 && j == 0){
+                        if(score < 10){
+                            printf("%i", score);
+                        }else{
+                            printf("%c", score+55);
+                        }
+                    }else if(body[0][0] == i && body[0][1] == j) {
                         printf("#");
                     }else if(bodyContains(i,j)){
                         printf("+");
                     }else if(snackX == i && snackY == j) {
                         printf("@");
                     }else{
-                        printf(".");
+                        printf(" ");
                     }
                 }
             }
@@ -101,6 +106,7 @@ void main(){
             updateInterval= updateInterval*.96;
             snackDeployed = 0;
             lengthen = 1;
+            score++;
         }
         if(!snackDeployed){
             deploySnack(termWidth, termHeight);
@@ -258,7 +264,7 @@ void checkGameOver(struct winsize *w, int x, int y, struct termios* termios_p){
         for(i = 0; i < w->ws_col; i++){
             printf("*");
         }
-        printf("\n%s\n",gameover);
+        printf("\n%s Your score was: %i\n",gameover,score);
         for(i = 0; i < w->ws_col; i++){
             printf("*");
         }
