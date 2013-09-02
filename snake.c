@@ -14,8 +14,9 @@ int* body[BODY_MAX_LEN];
 FILE* fd, *urand;
 unsigned int snackX, snackY, updateInterval;
 char snackDeployed = 0, lengthen, paused = 0,fast = 0, score = 0;
+struct winsize w;
 
-void main(){
+void main(int argc){
     int i,j,k,termWidth,termHeight;
     struct timeval tv;
     struct timeval ito;
@@ -25,9 +26,8 @@ void main(){
     struct termios termios_p;
     char input = 0,  print = 1,
         again = 1, justread = 0,
-        dir = RIGHT, trash;
+        dir = DOWN, trash;
     fd_set set;
-    struct winsize w;
     char** array;
     
     ito.tv_sec = 0;
@@ -48,7 +48,6 @@ void main(){
         i++;
     }
     
-    
     urand = fopen("/dev/urandom","r");
     printf("yo3\n");
     fflush(stdout);
@@ -56,8 +55,11 @@ void main(){
     ioctl(0, TIOCGWINSZ, &w);
     
     //malloc(1);
-    
-    fd = fopen("dbg", "w");
+    if(argc > 1){
+        fd = fopen("dbg", "w");
+    }else{
+        fd = fopen("/dev/null","w");
+    }
     fprintf(fd,"*** START ***\n");
     
     gettimeofday(&tv,NULL);
@@ -139,35 +141,39 @@ void main(){
         }
         if(input == 'q'){
             quit(&termios_p);
-        } else if(input == 'p'){
-            paused=!paused;
         }
+        fprintf(fd,"pause %i\n",paused);
         fast = 0;
-        if(justread && !paused){
-            fprintf(fd,"reacting to a readddddddddddddd\n");
-            if(input == 'a' && dir != RIGHT){
-                if(dir == LEFT){
-                    fast = 1;
-                }else{
-                    dir = LEFT;
-                }
-            }else if(input == 's' && dir != UP){
-                if(dir == DOWN){
-                    fast = 1;
-                }else{
-                    dir = DOWN;
-                }
-            }else if(input == 'w' && dir != DOWN){
-                if(dir == UP){
-                    fast = 1;
-                }else{
-                    dir = UP;
-                }
-            }else if(input == 'd' && dir != LEFT){
-                if(dir == RIGHT){
-                    fast = 1;
-                }else{
-                    dir = RIGHT;
+        if(justread){
+            if(input == 'p'){
+                paused=!paused;
+            }
+            if(!paused){
+                fprintf(fd,"reacting to a readddddddddddddd\n");
+                if(input == 'a' && dir != RIGHT){
+                    if(dir == LEFT){
+                        fast = 1;
+                    }else{
+                        dir = LEFT;
+                    }
+                }else if(input == 's' && dir != UP){
+                    if(dir == DOWN){
+                        fast = 1;
+                    }else{
+                        dir = DOWN;
+                    }
+                }else if(input == 'w' && dir != DOWN){
+                    if(dir == UP){
+                        fast = 1;
+                    }else{
+                        dir = UP;
+                    }
+                }else if(input == 'd' && dir != LEFT){
+                    if(dir == RIGHT){
+                        fast = 1;
+                    }else{
+                        dir = RIGHT;
+                    }
                 }
             }
         }
@@ -192,16 +198,16 @@ void main(){
 }
 
 void initBody(){
-    body[0][0]=70;
-    body[0][1]=5;
-    body[1][0]=70;
-    body[1][1]=4;
-    body[2][0]=70;
-    body[2][1]=3;
-    body[3][0]=70;
-    body[3][1]=2;
-    body[4][0]=70;
-    body[4][1]=1;
+    body[0][0]=w.ws_col/2;
+    body[0][1]=w.ws_row/2;
+    body[1][0]=w.ws_col/2;
+    body[1][1]=w.ws_row/2 - 1;
+    body[2][0]=w.ws_col/2;
+    body[2][1]=w.ws_row/2 - 2;
+    body[3][0]=w.ws_col/2;
+    body[3][1]=w.ws_row/2 - 3;
+    body[4][0]=w.ws_col/2;
+    body[4][1]=w.ws_row/2 - 4;
 }
 
 void slither(char lengthen){
@@ -235,6 +241,16 @@ char bodyContains(int x, int y){
 }
 
 void quit(struct termios* termios_p){
+    int i;
+    printf("\n");
+    for(i = 0; i < w.ws_col; i++){
+        printf("*");
+    }
+    printf("\n%s Your score was: %i\n",gameover,score);
+    for(i = 0; i < w.ws_col; i++){
+        printf("*");
+    }
+    printf("\n");
     fflush(0);
     //free(body[0]);
     termios_p->c_lflag |= ECHO;
@@ -260,15 +276,6 @@ void checkGameOver(struct winsize *w, int x, int y, struct termios* termios_p){
         i++;
     }
     if(x<0 || x >= w->ws_col || y < 0 || y >= w->ws_row || overlap){
-        printf("\n");
-        for(i = 0; i < w->ws_col; i++){
-            printf("*");
-        }
-        printf("\n%s Your score was: %i\n",gameover,score);
-        for(i = 0; i < w->ws_col; i++){
-            printf("*");
-        }
-        printf("\n");
         quit(termios_p);
     }
 }
